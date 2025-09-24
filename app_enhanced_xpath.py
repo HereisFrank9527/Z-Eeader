@@ -61,7 +61,7 @@ def show_progress(counter):
             break
         time.sleep(1)
 
-# 使用XPath增强的章节链接提取函数
+# 使用XPath增强的章节链接提取函数 - 优化版
 def find_chapter_links_enhanced(url, response):
     try:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -152,6 +152,8 @@ def find_chapter_links_enhanced(url, response):
             ]
             
             regex_chapters = []
+            parent_paths = {}  # 统计父元素路径出现的次数
+            
             for a_tag in soup.find_all('a'):
                 text = a_tag.get_text().strip()
                 
@@ -173,13 +175,86 @@ def find_chapter_links_enhanced(url, response):
                             'href': href,
                             'matched_pattern': 'regex: ' + pattern_str
                         })
+                        
+                        # 分析父元素路径，用于后续的XPath推断
+                        try:
+                            parent_path = []
+                            parent = a_tag.parent
+                            while parent and parent.name != 'body' and parent.name != 'html':
+                                # 构建父元素的简单路径表示
+                                elem_repr = parent.name
+                                if 'id' in parent.attrs:
+                                    elem_repr += f'[id="{parent["id"]}"]'
+                                elif 'class' in parent.attrs:
+                                    elem_repr += f'[class*="{parent["class"][0]}"]' if parent["class"] else ''
+                                parent_path.append(elem_repr)
+                                parent = parent.parent
+                            
+                            # 反转路径并构建XPath-like表示
+                            parent_path.reverse()
+                            path_str = '/'.join(parent_path)
+                            if path_str:
+                                parent_paths[path_str] = parent_paths.get(path_str, 0) + 1
+                        except Exception as e:
+                            # 分析父元素路径失败，继续处理下一个链接
+                            pass
+                        
                         break  # 找到一个匹配就跳出内层循环
             
-            # 如果正则表达式方法找到了更多链接，就使用正则表达式的结果
-            if len(regex_chapters) > len(chapter_links):
-                chapter_links = regex_chapters
+            # 3. 在正则表达式找到链接的同时，分析最常见的父元素路径并进行额外的XPath搜索
+            additional_chapters = []
+            
+            if regex_chapters and parent_paths:
+                # 找到出现次数最多的父元素路径
+                most_common_path = max(parent_paths.items(), key=lambda x: x[1])
+                
+                # 只在出现次数占绝对优势时才使用这个路径进行额外搜索
+                total_count = sum(parent_paths.values())
+                if most_common_path[1] / total_count > 0.5:  # 如果占比超过50%
+                    try:
+                        from lxml import etree
+                        
+                        # 构建XPath表达式
+                        xpath_expr = f'//{most_common_path[0]}//a'
+                        print(f"发现最常见的XPath路径: {xpath_expr} (出现频率: {most_common_path[1]}/{total_count})")
+                        
+                        html_tree = etree.HTML(response.text)
+                        elements = html_tree.xpath(xpath_expr)
+                        
+                        for element in elements:
+                            if element.text and len(element.text.strip()) > 0 and element.get('href'):
+                                text = element.text.strip()
+                                href = element.get('href', '')
+                                
+                                # 处理相对链接
+                                if href and not href.startswith(('http://', 'https://')):
+                                    if href.startswith('/'):
+                                        from urllib.parse import urljoin
+                                        href = urljoin(url, href)
+                                    else:
+                                        from urllib.parse import urljoin
+                                        href = urljoin(url, href)
+                                
+                                # 添加到额外的章节链接列表
+                                additional_chapters.append({
+                                    'text': text,
+                                    'href': href,
+                                    'matched_pattern': 'xpath_inferred: ' + xpath_expr
+                                })
+                        
+                        if len(additional_chapters) > 0:
+                            print(f"通过推断的XPath额外找到 {len(additional_chapters)} 个链接")
+                    except Exception as e:
+                        print(f"通过推断的XPath进行额外搜索时出错: {e}")
+            
+            # 4. 合并正则表达式和额外XPath搜索的结果
+            all_regex_chapters = regex_chapters + additional_chapters
+            
+            # 如果正则表达式方法（包括额外搜索）找到了更多链接，就使用正则表达式的结果
+            if len(all_regex_chapters) > len(chapter_links):
+                chapter_links = all_regex_chapters
         
-        # 3. 去重并排序（尝试按章节顺序）
+        # 5. 去重并排序（尝试按章节顺序）
         if chapter_links:
             # 去重
             seen = set()
@@ -271,12 +346,16 @@ def extract_content_advanced_with_retry(url, filename=None, element_ids=None, ma
     print(f"达到最大重试次数，放弃: {url}")
     return False
 
-# 原有函数保持不变
+# 优化版函数：删除a标签和包含网址的段落
 def format_content_advanced(element):
     # 创建副本
     element_copy = BeautifulSoup(str(element), 'html.parser').find()
     
-    # 获取所有直接子节点（包括文本和标签）
+    # 1. 移除所有<a>标签及其内容
+    for a_tag in element_copy.find_all('a'):
+        a_tag.decompose()  # 完全删除标签及其内容
+    
+    # 2. 获取所有直接子节点（包括文本和标签）
     nodes = list(element_copy.children)
     
     paragraphs = []
@@ -304,13 +383,19 @@ def format_content_advanced(element):
     if current_paragraph:
         paragraphs.append(' '.join(current_paragraph))
     
-    formatted_paragraphs = []
+    # 3. 过滤掉包含网址的段落
+    # 网址正则表达式模式
+    url_pattern = re.compile(r'https?://\S+|www\.\S+|\.com|\.cn|\.net|\.org|\.info')
+    
+    filtered_paragraphs = []
     for para in paragraphs:
         para = re.sub(r'\s+', ' ', para)
-        formatted_para = '  ' + para
-        formatted_paragraphs.append(formatted_para)
+        # 检查段落是否包含网址
+        if not url_pattern.search(para):
+            formatted_para = '  ' + para
+            filtered_paragraphs.append(formatted_para)
     
-    result = '\n'.join(formatted_paragraphs)
+    result = '\n'.join(filtered_paragraphs)
     return result
 
 # 多线程处理函数
