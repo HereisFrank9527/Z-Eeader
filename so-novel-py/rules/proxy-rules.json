@@ -1,0 +1,71 @@
+[
+  {
+    "url": "https://www.69shuba.com/",
+    "name": "69书吧",
+    "comment": "搜索有CF，可能启用的其他域名：69shuba.me，69shuba.cx，目前章节页也加了CF盾",
+    "needProxy": true,
+    "disabled": true,
+    "book": {
+      "url": "https://www.69shuba.com/book/(.*?).htm",
+      "bookName": "meta[property=\"og:novel:book_name\"]",
+      "author": "meta[property=\"og:novel:author\"]",
+      "intro": "meta[property=\"og:description\"]",
+      "category": "meta[property=\"og:novel:category\"]",
+      "coverUrl": "meta[property=\"og:image\"]",
+      "latestChapter": "meta[property=\"og:novel:latest_chapter_name\"]",
+      "lastUpdateTime": "meta[property=\"og:novel:update_time\"]",
+      "status": "meta[property=\"og:novel:status\"]"
+    },
+    "toc": {
+      "url": "https://69shuba.com/book/%s/",
+      "item": "#catalog > ul > li > a",
+      "isDesc": true
+    },
+    "chapter": {
+      "title": ".txtnav > h1",
+      "content": ".txtnav",
+      "paragraphTagClosed": false,
+      "paragraphTag": "<br>+",
+      "filterTxt": "无一错一首一发一内一容一在一6一9一书一吧一看！|\\(本章完\\)|最⊥新⊥小⊥说⊥在⊥六⊥9⊥⊥书⊥⊥吧⊥⊥首⊥发！",
+      "filterTag": "h1 div"
+    },
+    "crawl": {
+      "threads": 1,
+      "minInterval": 1000,
+      "maxInterval": 2000
+    }
+  },
+  {
+    "url": "https://quanben5.com/",
+    "name": "全本小说网",
+    "comment": "完本很全，搜索限流，搜索需逆向加密参数b",
+    "needProxy": true,
+    "search": {
+      "url": "https://quanben5.com/?c=book&a=search.json&callback=search&keywords=%s&b=%s",
+      "method": "get",
+      "result": ".pic_txt_list",
+      "bookName": "h3 > a",
+      "author": "p.info > span"
+    },
+    "book": {
+      "url": "https://quanben5.com/n/(.*?)/",
+      "bookName": "h3 > span",
+      "author": "body > div.row > div > div:nth-child(1) > div.pic_txt_list > p:nth-child(3) > span",
+      "intro": "body > div.row > div > div:nth-child(1) > div.description",
+      "category": "body > div.row > div > div:nth-child(1) > div.pic_txt_list > p:nth-child(4) > span",
+      "coverUrl": "body > div.row > div > div:nth-child(1) > div.pic_txt_list > div > img",
+      "status": "body > div.row > div > div:nth-child(1) > div.pic_txt_list > p:nth-child(5) > span"
+    },
+    "toc": {
+      "url": "https://quanben5.com/n/%s/xiaoshuo.html",
+      "item": "ul > li > a"
+    },
+    "chapter": {
+      "title": ".content > h1",
+      "content": "#content",
+      "paragraphTagClosed": true,
+      "filterTxt": "\\(本章完\\)",
+      "filterTag": ""
+    }
+  }
+]
