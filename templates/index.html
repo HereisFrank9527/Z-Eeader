@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z Reader - 小说下载工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <h1>📚 Z Reader</h1>
+            <p class="subtitle">小说搜索与下载工具</p>
+        </header>
+
+        <!-- 标签页导航 -->
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab('search', event)">搜索书籍</button>
+            <button class="tab-btn" onclick="switchTab('sources', event)">书源管理</button>
+            <button class="tab-btn" onclick="switchTab('tasks', event)">下载任务</button>
+            <button class="tab-btn" onclick="switchTab('files', event)">文件管理</button>
+        </nav>
+
+        <!-- 搜索书籍标签页 -->
+        <div id="search-tab" class="tab-content active">
+            <div class="search-section">
+                <!-- 公告模块 -->
+                {% if announcement %}
+                <div class="announcement">
+                    {{ announcement|safe }}
+                </div>
+                {% endif %}
+
+                <h2>搜索书籍</h2>
+                <div class="search-form">
+                    <input type="text" id="search-keyword" placeholder="请输入书名或作者" class="input-field">
+                    <select id="search-source" class="select-field">
+                        <option value="">所有书源</option>
+                    </select>
+                    <button onclick="searchBooks()" class="btn btn-primary">搜索</button>
+                </div>
+
+                <div id="search-loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>搜索中...</p>
+                </div>
+
+                <div id="search-results" class="results-container"></div>
+            </div>
+        </div>
+
+        <!-- 书源管理标签页 -->
+        <div id="sources-tab" class="tab-content">
+            <div class="sources-section">
+                <h2>书源列表</h2>
+                <button onclick="checkAllSources()" class="btn btn-primary" style="margin-bottom: 15px;">检查所有书源</button>
+                <div id="sources-loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div id="check-summary" class="check-summary" style="display: none;"></div>
+                <div id="sources-list" class="sources-list"></div>
+            </div>
+        </div>
+
+        <!-- 下载任务标签页 -->
+        <div id="tasks-tab" class="tab-content">
+            <div class="tasks-section">
+                <h2>下载任务</h2>
+                <button onclick="refreshTasks()" class="btn btn-secondary">刷新</button>
+                <div id="tasks-list" class="tasks-list"></div>
+            </div>
+        </div>
+
+        <!-- 文件管理标签页 -->
+        <div id="files-tab" class="tab-content">
+            <div class="files-section">
+                <h2>已下载文件</h2>
+                <button onclick="refreshFiles()" class="btn btn-secondary">刷新</button>
+                <div id="files-list" class="files-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下载对话框 -->
+    <div id="download-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDownloadModal()">&times;</span>
+            <h3>下载设置</h3>
+            <div class="form-group">
+                <label>书籍 URL:</label>
+                <input type="text" id="download-url" class="input-field" readonly>
+            </div>
+            <div class="form-group">
+                <label>书名:</label>
+                <input type="text" id="download-book-name" class="input-field" readonly>
+            </div>
+            <div class="form-group">
+                <label>作者:</label>
+                <input type="text" id="download-author" class="input-field" readonly>
+            </div>
+            <div class="form-group">
+                <label>输出格式:</label>
+                <select id="download-format" class="select-field">
+                    <option value="txt">TXT 文本</option>
+                    <option value="epub">EPUB 电子书</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>起始章节:</label>
+                <input type="number" id="download-start" class="input-field" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>结束章节 (-1 表示全部):</label>
+                <input type="number" id="download-end" class="input-field" value="-1">
+            </div>
+            <input type="hidden" id="download-source-id">
+            <button onclick="startDownload()" class="btn btn-primary">开始下载</button>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
