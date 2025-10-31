@@ -75,7 +75,19 @@ class Selector:
             selector, js_expr = selector.split('@js:', 1)
             selector = selector.strip()
 
+        # 处理包含 tbody 的选择器（BeautifulSoup + lxml 不会自动添加 tbody）
+        # 尝试原始选择器，如果失败且包含 tbody，则移除 tbody 重试
         elements = self.soup.select(selector)
+        if not elements and 'tbody' in selector:
+            # 使用正则表达式精确移除 tbody 及其前后的组合符
+            import re
+            # 处理各种可能的 tbody 组合：
+            # > tbody > 、> tbody 、 tbody > 、 tbody 
+            selector_without_tbody = re.sub(r'>\s*tbody\s*>', '>', selector)  # > tbody > -> >
+            selector_without_tbody = re.sub(r'\s+tbody\s+', ' ', selector_without_tbody)  # 空格 tbody 空格 -> 空格
+            selector_without_tbody = re.sub(r'>\s*tbody\s+', '> ', selector_without_tbody)  # > tbody 空格 -> > 
+            selector_without_tbody = re.sub(r'\s+tbody\s*>', ' >', selector_without_tbody)  # 空格 tbody > -> 空格>
+            elements = self.soup.select(selector_without_tbody)
         results = []
 
         for elem in elements:
