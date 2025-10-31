@@ -3,32 +3,32 @@
 # 包含所有必要的核心依赖和它们的直接依赖
 
 # === 核心功能包 ===
-beautifulsoup4==4.10.0  # 必须 - HTML解析
-lxml==4.6.3  # 必须 - HTML/XML解析器
-requests==2.26.0  # 必须 - HTTP请求
+beautifulsoup4  # 必须 - HTML解析
+lxml  # 必须 - HTML/XML解析器
+requests  # 必须 - HTTP请求
 chardet  # 必须 - 字符编码检测（requests需要）
-EbookLib==0.19  # 必须 - EPUB电子书生成
-Flask==2.0.1  # 必须 - Web框架
+EbookLib  # 必须 - EPUB电子书生成
+Flask  # 必须 - Web框架
 
 # === Flask依赖 ===
-Jinja2==3.1.2  # Flask依赖 - 模板引擎
-Werkzeug==2.3.6  # Flask依赖 - WSGI工具
-click==8.1.3  # Flask依赖 - 命令行工具
-itsdangerous==2.1.2  # Flask依赖 - 安全签名
-MarkupSafe==2.1.3  # Jinja2依赖 - 安全标记
-blinker==1.9.0  # Flask依赖 - 信号支持
+Jinja2  # Flask依赖 - 模板引擎
+Werkzeug  # Flask依赖 - WSGI工具
+click  # Flask依赖 - 命令行工具
+itsdangerous  # Flask依赖 - 安全签名
+MarkupSafe  # Jinja2依赖 - 安全标记
+blinker  # Flask依赖 - 信号支持
 
 # === requests依赖 ===
-urllib3==1.26.20  # requests依赖 - HTTP连接池
-certifi==2025.8.3  # requests依赖 - SSL证书
-charset-normalizer==2.0.12  # requests依赖 - 字符集检测
-idna==3.10  # requests依赖 - 国际化域名
+urllib3  # requests依赖 - HTTP连接池
+certifi  # requests依赖 - SSL证书
+charset-normalizer  # requests依赖 - 字符集检测
+idna  # requests依赖 - 国际化域名
 
 # === BeautifulSoup4依赖 ===
-soupsieve==2.4.1  # BeautifulSoup4依赖 - CSS选择器
+soupsieve  # BeautifulSoup4依赖 - CSS选择器
 
 # === EbookLib依赖 ===
-six==1.17.0  # EbookLib依赖 - Python2/3兼容
+six  # EbookLib依赖 - Python2/3兼容
 # lxml已在核心功能包中定义
 
 # === 可选依赖（提高性能和兼容性） ===
