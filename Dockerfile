@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 端口5000 (设置你的项目的服务端口)
 EXPOSE 5000
 # 执行
-CMD ["python", "./app.py", "0.0.0.0"]
+CMD ["python", "./server.py", "0.0.0.0"]
