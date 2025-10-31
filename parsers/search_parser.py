@@ -179,9 +179,25 @@ class SearchParser:
         selector = Selector(html, self.rule.url)
         books = []
 
-        # 选择所有结果项
+        # 选择所有结果项 - 使用Selector的select方法而不是直接用soup.select
+        # 这样可以利用Selector类中的tbody处理逻辑
+        result_elements_html = selector.select(search_rule.result)
+        
+        # 需要将HTML文本转换回元素对象以提取链接
+        from bs4 import BeautifulSoup
         soup = selector.soup
-        result_elements = soup.select(search_rule.result)
+        
+        # 重新用soup.select获取元素对象（用于提取href）
+        # 但先检查是否包含tbody，如果包含则移除后再选择
+        result_selector = search_rule.result
+        if 'tbody' in result_selector:
+            import re
+            result_selector = re.sub(r'>\s*tbody\s*>', '>', result_selector)
+            result_selector = re.sub(r'\s+tbody\s+', ' ', result_selector)
+            result_selector = re.sub(r'>\s*tbody\s+', '> ', result_selector)
+            result_selector = re.sub(r'\s+tbody\s*>', ' >', result_selector)
+        
+        result_elements = soup.select(result_selector)
 
         for elem in result_elements:
             try:
