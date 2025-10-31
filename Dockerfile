@@ -1,5 +1,5 @@
 # 项目基于的python版本
-FROM python:3.11.13
+FROM python:3.11
 # 将当前目录复制到镜像的指定目录下（这里选择的是docker_flask目录）
 ADD . /z-reader
 # 项目的工作路径
