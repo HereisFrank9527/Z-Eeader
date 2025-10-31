@@ -2,6 +2,7 @@
 建议搜索时不要选“全部书源”，防止加载速度过慢
 建议选择“阅读库”（2025.10.30）
 [开源项目地址](https://github.com/HereisFrank9527/Z-Eeader)
+请输入完整小说名，如无果，请输入完整作者名
 
 <details>
 <summary>Buy me a cup of coffee！</summary>
