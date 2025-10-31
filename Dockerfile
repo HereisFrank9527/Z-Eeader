@@ -6,7 +6,7 @@ ADD . /z-reader
 WORKDIR /z-reader
 # 导入项目依赖包（就是刚刚编写的requirements.txt）
 # -i https://mirrors.aliyun.com/pypi/simple/是指定国内镜像加速下载依赖
-RUN pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 端口5000 (设置你的项目的服务端口)
 EXPOSE 5000
 # 执行
