@@ -10,6 +10,7 @@
 
 可前往 [Release](https://github.com/HereisFrank9527/Z-Reader/releases) 下载windows版本，支持win7及以上，仅20MB。
 
+![效果](https://img.0xff.ink/pic/blog/Z-Reader/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-10-31%20082119.png)
 
 ## ✨ 项目特点
 
