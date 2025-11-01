@@ -196,6 +196,10 @@ GPL-3.0
 <summary>Buy me a cup of coffee！</summary>
 <img src="/static/pic.jpg" width="400" height="400">
 </details>
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=HereisFrank9527/Z-Reader&type=timeline&legend=top-left)](https://www.star-history.com/#HereisFrank9527/Z-Reader&type=timeline&legend=top-left)
 ---
 
 **版本**: 1.0.0 | **更新**: 2025-10-30
