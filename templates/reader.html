@@ -9,7 +9,7 @@
         /* 阅读器特定样式 */
         .reader-container {
             display: flex;
-            height: calc(100vh - 120px);
+            height: calc(100vh - 40px);
             margin-top: 20px;
         }
 
@@ -327,6 +327,7 @@
             <div class="reader-sidebar">
                 <div class="book-info">
                     <div class="book-title" id="book-title">加载中...</div>
+                    <div class="book-meta" id="book-source">来源：{{ source_name }}</div>
                     <div class="book-meta" id="book-author">作者：加载中...</div>
                     <div class="book-meta" id="book-status">状态：加载中...</div>
                     <div class="book-meta" id="chapter-count">章节数：加载中...</div>

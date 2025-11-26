@@ -817,6 +817,6 @@ if __name__ == '__main__':
     app.run(
         host='::',
         port=5000,
-        debug=False,
+        debug=True,
         threaded=True
     )
