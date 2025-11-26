@@ -16,6 +16,10 @@ from core.rule_loader import RuleLoader
 from core.http_client import HttpClient
 from core.downloader import Downloader
 from parsers.search_parser import SearchParser
+from models.chapter import Chapter
+from parsers.book_parser import BookParser
+from parsers.toc_parser import TocParser
+from parsers.chapter_parser import ChapterParser
 
 # 创建 Flask 应用
 app = Flask(__name__)
@@ -25,6 +29,9 @@ app.config['JSON_AS_ASCII'] = False  # 支持中文
 rule_loader = RuleLoader()
 download_tasks = {}  # 下载任务字典
 task_lock = threading.Lock()
+
+# Reader cache for book info and chapter content
+reader_cache = {}
 
 
 # ==================== 首页 ====================
@@ -600,6 +607,201 @@ def download_file(filename):
         }), 500
 
 
+# ==================== 阅读器功能 ====================
+@app.route('/api/reader/book', methods=['POST'])
+def get_reader_book_info():
+    """获取阅读器书籍信息和章节列表"""
+    try:
+        data = request.get_json()
+        book_url = data.get('book_url', '').strip()
+        source_id = data.get('source_id')
+
+        if not book_url or not source_id:
+            return jsonify({
+                'success': False,
+                'message': '请提供书籍 URL 和书源 ID'
+            }), 400
+
+        # 检查缓存
+        cache_key = f"book_{source_id}_{book_url}"
+        if cache_key in reader_cache:
+            return jsonify({
+                'success': True,
+                'data': reader_cache[cache_key],
+                'cached': True
+            })
+
+        # 加载规则
+        rules = rule_loader.load_rules("main-rules.json")
+        if source_id < 1 or source_id > len(rules):
+            return jsonify({
+                'success': False,
+                'message': f'无效的书源 ID: {source_id}'
+            }), 400
+
+        rule = rules[source_id - 1]
+
+        try:
+            # 创建HTTP客户端和解析器
+            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=10)
+            
+            # 获取书籍信息
+            book_parser = BookParser(rule, http_client)
+            book = book_parser.parse(book_url)
+            
+            if not book:
+                http_client.close()
+                return jsonify({
+                    'success': False,
+                    'message': '获取书籍信息失败'
+                }), 404
+
+            # 获取章节列表
+            toc_parser = TocParser(rule, http_client)
+            chapters = toc_parser.parse(book_url, 1, -1)  # 获取所有章节
+            
+            http_client.close()
+
+            # 构建返回数据
+            book_data = {
+                'book_name': book.book_name,
+                'author': book.author,
+                'intro': book.intro,
+                'category': book.category,
+                'cover_url': book.cover_url,
+                'latest_chapter': book.latest_chapter,
+                'status': book.status,
+                'chapters': [
+                    {
+                        'index': chapter.index,
+                        'title': chapter.title,
+                        'url': chapter.url
+                    } for chapter in chapters
+                ]
+            }
+
+            # 缓存结果
+            reader_cache[cache_key] = book_data
+
+            return jsonify({
+                'success': True,
+                'data': book_data,
+                'cached': False
+            })
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'获取书籍信息失败: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'请求处理失败: {str(e)}'
+        }), 500
+
+
+@app.route('/api/reader/chapter', methods=['POST'])
+def get_reader_chapter():
+    """获取阅读器章节内容"""
+    try:
+        data = request.get_json()
+        chapter_url = data.get('chapter_url', '').strip()
+        source_id = data.get('source_id')
+
+        if not chapter_url or not source_id:
+            return jsonify({
+                'success': False,
+                'message': '请提供章节 URL 和书源 ID'
+            }), 400
+
+        # 检查缓存
+        cache_key = f"chapter_{source_id}_{chapter_url}"
+        if cache_key in reader_cache:
+            return jsonify({
+                'success': True,
+                'data': reader_cache[cache_key],
+                'cached': True
+            })
+
+        # 加载规则
+        rules = rule_loader.load_rules("main-rules.json")
+        if source_id < 1 or source_id > len(rules):
+            return jsonify({
+                'success': False,
+                'message': f'无效的书源 ID: {source_id}'
+            }), 400
+
+        rule = rules[source_id - 1]
+
+        try:
+            # 创建HTTP客户端和解析器
+            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=10)
+            chapter_parser = ChapterParser(rule, http_client)
+            
+            # 创建章节对象并传递URL
+            chapter_obj = Chapter(url=chapter_url)
+            
+            # 获取章节内容
+            chapter = chapter_parser.parse(chapter_obj)
+            http_client.close()
+
+            if not chapter:
+                return jsonify({
+                    'success': False,
+                    'message': '获取章节内容失败'
+                }), 404
+
+            # 构建返回数据
+            chapter_data = {
+                'title': chapter.title,
+                'content': chapter.content,
+                'url': chapter.url,
+                'index': chapter.index
+            }
+
+            # 缓存结果
+            reader_cache[cache_key] = chapter_data
+
+            return jsonify({
+                'success': True,
+                'data': chapter_data,
+                'cached': False
+            })
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'获取章节内容失败: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'请求处理失败: {str(e)}'
+        }), 500
+
+
+@app.route('/reader/<int:source_id>/<path:book_url>')
+def reader_page(source_id, book_url):
+    """阅读器页面"""
+    # 加载规则验证书源ID
+    try:
+        rules = rule_loader.load_rules("main-rules.json")
+        if source_id < 1 or source_id > len(rules):
+            return "无效的书源 ID", 404
+        
+        rule = rules[source_id - 1]
+        
+        return render_template('reader.html', 
+                          source_id=source_id, 
+                          book_url=book_url,
+                          source_name=rule.name)
+    except Exception as e:
+        return f"加载阅读器失败: {str(e)}", 500
+
+
 # ==================== 启动服务器 ====================
 if __name__ == '__main__':
     # 创建下载目录
@@ -613,8 +815,8 @@ if __name__ == '__main__':
     print("按 Ctrl+C 停止服务器\n")
     webbrowser.open("http://localhost:5000")
     app.run(
-        host='0.0.0.0',
+        host='::',
         port=5000,
-        debug=True,
+        debug=False,
         threaded=True
     )

@@ -348,6 +348,21 @@ async function searchBooks() {
     }
 }
 
+// ==================== 阅读器功能 ====================
+function openReader(index) {
+    const book = searchResults[index];
+    if (!book) {
+        showToast('无效的书籍索引', 'error');
+        return;
+    }
+
+    // 构建阅读器URL
+    const readerUrl = `/reader/${book.source_id}/${encodeURIComponent(book.url)}`;
+    
+    // 在新标签页打开阅读器
+    window.open(readerUrl, '_blank');
+}
+
 function renderSearchResults(books) {
     const resultsEl = document.getElementById('search-results');
 
@@ -371,7 +386,10 @@ function renderSearchResults(books) {
                     <div class="result-title">${book.book_name}</div>
                     <div class="result-author">作者: ${book.author}</div>
                 </div>
-                <button class="btn btn-primary" onclick="openDownloadModal(${index})">下载</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="openReader(${index})" style="background: #28a745;">📖 阅读</button>
+                    <button class="btn btn-primary" onclick="openDownloadModal(${index})">下载</button>
+                </div>
             </div>
             <div class="result-meta">
                 <span>📚 书源: ${book.source_name}</span>
