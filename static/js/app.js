@@ -311,6 +311,7 @@ async function searchBooks() {
                         // 实时显示结果
                         allBooks.push(...data.books);
                         renderSearchResults(allBooks);
+                        searchResults = allBooks;
                         break;
 
                     case 'error_source':

@@ -308,6 +308,220 @@
         .font-size-btn:hover {
             transform: scale(1.1);
         }
+
+        /* TTS 控制面板 */
+        .tts-controls {
+            position: fixed;
+            bottom: 140px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            min-width: 280px;
+            max-width: 320px;
+        }
+
+        .tts-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tts-title {
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-status {
+            font-size: 0.8em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .tts-status.playing {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .tts-status.paused {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .tts-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tts-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+        }
+
+        .tts-btn:hover:not(:disabled) {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .tts-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tts-btn.stop {
+            background: #f44336;
+        }
+
+        .tts-btn.stop:hover:not(:disabled) {
+            background: #d32f2f;
+        }
+
+        .tts-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tts-setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .tts-setting-label {
+            font-size: 0.85em;
+            color: #666;
+            min-width: 60px;
+        }
+
+        .tts-voice-select, .tts-speed-slider {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .tts-speed-value {
+            font-size: 0.8em;
+            color: #667eea;
+            font-weight: bold;
+            min-width: 35px;
+            text-align: right;
+        }
+
+        .tts-progress {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .tts-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .tts-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .tts-progress-text {
+            font-size: 0.8em;
+            color: #666;
+            text-align: center;
+        }
+
+        /* 文本高亮 */
+        .tts-highlight {
+            background: linear-gradient(90deg, #fff59d 0%, #ffeb3b 50%, #fff59d 100%);
+            border-radius: 3px;
+            padding: 2px 4px;
+            transition: all 0.3s;
+        }
+
+        /* TTS 切换按钮 */
+        .tts-toggle-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+        }
+
+        .tts-toggle-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tts-toggle-btn.active {
+            background: #4caf50;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .tts-controls {
+                bottom: 100px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+
+            .tts-toggle-btn {
+                bottom: 60px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .font-size-controls {
+                bottom: 20px;
+                right: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -380,6 +594,65 @@
     <div class="font-size-controls">
         <button class="font-size-btn" onclick="changeFontSize(-1)">A-</button>
         <button class="font-size-btn" onclick="changeFontSize(1)">A+</button>
+    </div>
+
+    <!-- TTS 切换按钮 -->
+    <button class="tts-toggle-btn" id="tts-toggle-btn" onclick="toggleTTSPanel()" title="语音朗读">
+        🔊
+    </button>
+
+    <!-- TTS 控制面板 -->
+    <div class="tts-controls" id="tts-controls" style="display: none;">
+        <div class="tts-header">
+            <div class="tts-title">
+                <span>🔊</span>
+                <span>语音朗读</span>
+            </div>
+            <div class="tts-status" id="tts-status">未开始</div>
+        </div>
+        
+        <div class="tts-buttons">
+            <button class="tts-btn" id="tts-play-btn" onclick="toggleTTSPlay()" disabled>
+                <span>▶️</span>
+                <span>播放</span>
+            </button>
+            <button class="tts-btn" id="tts-pause-btn" onclick="pauseTTS()" disabled>
+                <span>⏸️</span>
+                <span>暂停</span>
+            </button>
+            <button class="tts-btn stop" id="tts-stop-btn" onclick="stopTTS()" disabled>
+                <span>⏹️</span>
+                <span>停止</span>
+            </button>
+        </div>
+
+        <div class="tts-settings">
+            <div class="tts-setting-row">
+                <label class="tts-setting-label">语音:</label>
+                <select class="tts-voice-select" id="tts-voice-select">
+                    <option value="">加载中...</option>
+                </select>
+            </div>
+            
+            <div class="tts-setting-row">
+                <label class="tts-setting-label">语速:</label>
+                <input type="range" class="tts-speed-slider" id="tts-speed-slider" 
+                       min="0.5" max="2.0" step="0.1" value="1.0">
+                <span class="tts-speed-value" id="tts-speed-value">1.0x</span>
+            </div>
+
+            <div class="tts-setting-row">
+                <label class="tts-setting-label">自动下一章:</label>
+                <input type="checkbox" id="tts-auto-next-chapter" checked>
+            </div>
+        </div>
+
+        <div class="tts-progress">
+            <div class="tts-progress-bar">
+                <div class="tts-progress-fill" id="tts-progress-fill"></div>
+            </div>
+            <div class="tts-progress-text" id="tts-progress-text">准备就绪</div>
+        </div>
     </div>
 
     <script>
@@ -692,6 +965,451 @@
             currentFontSize = parseInt(savedFontSize);
             document.getElementById('chapter-content').style.fontSize = currentFontSize + 'px';
         }
+
+        // TTS 相关变量
+        let ttsState = {
+            isPlaying: false,
+            isPaused: false,
+            currentParagraph: 0,
+            paragraphs: [],
+            utterance: null,
+            voices: [],
+            selectedVoice: null,
+            speed: 1.0,
+            autoNextChapter: true
+        };
+
+        // 初始化 TTS
+        function initTTS() {
+            if ('speechSynthesis' in window) {
+                // 加载语音列表
+                loadVoices();
+                
+                // 监听语音列表变化
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+                
+                // 加载保存的设置
+                loadTTSSettings();
+                
+                // 绑定事件监听器
+                setupTTSListeners();
+                
+                console.log('TTS 初始化成功');
+            } else {
+                console.warn('浏览器不支持语音合成');
+                updateTTSStatus('不支持');
+            }
+        }
+
+        // 加载可用语音
+        function loadVoices() {
+            const voices = speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById('tts-voice-select');
+            
+            // 筛选中文语音
+            const chineseVoices = voices.filter(voice => 
+                voice.lang.includes('zh') || voice.lang.includes('CN')
+            );
+            
+            if (chineseVoices.length === 0) {
+                // 如果没有中文语音，使用所有语音
+                ttsState.voices = voices;
+            } else {
+                ttsState.voices = chineseVoices;
+            }
+            
+            // 更新下拉列表
+            voiceSelect.innerHTML = '';
+            
+            if (ttsState.voices.length === 0) {
+                voiceSelect.innerHTML = '<option value="">无可用语音</option>';
+                return;
+            }
+            
+            ttsState.voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.default) {
+                    option.selected = true;
+                    ttsState.selectedVoice = voice;
+                }
+                voiceSelect.appendChild(option);
+            });
+            
+            // 如果没有默认语音，选择第一个
+            if (!ttsState.selectedVoice && ttsState.voices.length > 0) {
+                ttsState.selectedVoice = ttsState.voices[0];
+                voiceSelect.value = 0;
+            }
+        }
+
+        // 设置 TTS 事件监听器
+        function setupTTSListeners() {
+            // 语音选择
+            document.getElementById('tts-voice-select').addEventListener('change', function(e) {
+                const voiceIndex = parseInt(e.target.value);
+                if (voiceIndex >= 0 && voiceIndex < ttsState.voices.length) {
+                    ttsState.selectedVoice = ttsState.voices[voiceIndex];
+                    saveTTSSettings();
+                }
+            });
+            
+            // 语速调整
+            document.getElementById('tts-speed-slider').addEventListener('input', function(e) {
+                ttsState.speed = parseFloat(e.target.value);
+                document.getElementById('tts-speed-value').textContent = ttsState.speed.toFixed(1) + 'x';
+                saveTTSSettings();
+            });
+            
+            // 自动下一章设置
+            document.getElementById('tts-auto-next-chapter').addEventListener('change', function(e) {
+                ttsState.autoNextChapter = e.target.checked;
+                saveTTSSettings();
+            });
+        }
+
+        // 切换 TTS 面板显示
+        function toggleTTSPanel() {
+            const panel = document.getElementById('tts-controls');
+            const toggleBtn = document.getElementById('tts-toggle-btn');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                toggleBtn.classList.add('active');
+                
+                // 如果还没有初始化 TTS，现在初始化
+                if (ttsState.voices.length === 0) {
+                    initTTS();
+                }
+                
+                // 如果当前有章节内容，准备 TTS
+                if (currentChapterIndex >= 0) {
+                    prepareTTS();
+                }
+            } else {
+                panel.style.display = 'none';
+                toggleBtn.classList.remove('active');
+            }
+        }
+
+        // 准备 TTS
+        function prepareTTS() {
+            const chapterContent = document.getElementById('chapter-content');
+            const paragraphs = chapterContent.querySelectorAll('p');
+            
+            if (paragraphs.length === 0) {
+                updateTTSStatus('无内容');
+                return;
+            }
+            
+            // 提取段落文本
+            ttsState.paragraphs = Array.from(paragraphs).map(p => p.textContent.trim()).filter(text => text);
+            ttsState.currentParagraph = 0;
+            
+            // 启用播放按钮
+            document.getElementById('tts-play-btn').disabled = false;
+            document.getElementById('tts-stop-btn').disabled = false;
+            
+            updateTTSStatus('准备就绪');
+            updateTTSProgress(0, ttsState.paragraphs.length);
+        }
+
+        // 切换播放/暂停
+        function toggleTTSPlay() {
+            if (ttsState.isPlaying && !ttsState.isPaused) {
+                pauseTTS();
+            } else {
+                startTTS();
+            }
+        }
+
+        // 开始 TTS
+        function startTTS() {
+            if (ttsState.paragraphs.length === 0) {
+                showError('没有可朗读的内容');
+                return;
+            }
+            
+            if (ttsState.isPaused) {
+                // 继续播放
+                speechSynthesis.resume();
+                ttsState.isPaused = false;
+                ttsState.isPlaying = true;
+                updateTTSStatus('播放中');
+                updateTTSButtons();
+                return;
+            }
+            
+            // 开始新的朗读
+            if (ttsState.currentParagraph >= ttsState.paragraphs.length) {
+                ttsState.currentParagraph = 0;
+            }
+            
+            speakCurrentParagraph();
+        }
+
+        // 朗读当前段落
+        function speakCurrentParagraph() {
+            if (ttsState.currentParagraph >= ttsState.paragraphs.length) {
+                // 当前章节朗读完毕
+                if (ttsState.autoNextChapter && currentChapterIndex < chapters.length - 1) {
+                    // 自动加载下一章
+                    loadNextChapterForTTS();
+                } else {
+                    // 停止朗读
+                    stopTTS();
+                }
+                return;
+            }
+            
+            const text = ttsState.paragraphs[ttsState.currentParagraph];
+            
+            // 创建语音合成实例
+            ttsState.utterance = new SpeechSynthesisUtterance(text);
+            ttsState.utterance.voice = ttsState.selectedVoice;
+            ttsState.utterance.rate = ttsState.speed;
+            ttsState.utterance.lang = ttsState.selectedVoice ? ttsState.selectedVoice.lang : 'zh-CN';
+            
+            // 设置事件监听器
+            ttsState.utterance.onstart = function() {
+                ttsState.isPlaying = true;
+                ttsState.isPaused = false;
+                updateTTSStatus('播放中');
+                updateTTSButtons();
+                highlightCurrentParagraph();
+            };
+            
+            ttsState.utterance.onend = function() {
+                ttsState.currentParagraph++;
+                updateTTSProgress(ttsState.currentParagraph, ttsState.paragraphs.length);
+                removeHighlight();
+                
+                // 继续下一段
+                setTimeout(() => {
+                    if (ttsState.isPlaying) {
+                        speakCurrentParagraph();
+                    }
+                }, 100);
+            };
+            
+            ttsState.utterance.onerror = function(event) {
+                console.error('TTS 错误:', event);
+                showError('语音朗读出错');
+                stopTTS();
+            };
+            
+            // 开始朗读
+            speechSynthesis.speak(ttsState.utterance);
+        }
+
+        // 暂停 TTS
+        function pauseTTS() {
+            if (speechSynthesis.speaking && !speechSynthesis.pending) {
+                speechSynthesis.pause();
+                ttsState.isPaused = true;
+                ttsState.isPlaying = false;
+                updateTTSStatus('已暂停');
+                updateTTSButtons();
+            }
+        }
+
+        // 停止 TTS
+        function stopTTS() {
+            speechSynthesis.cancel();
+            ttsState.isPlaying = false;
+            ttsState.isPaused = false;
+            ttsState.currentParagraph = 0;
+            removeHighlight();
+            updateTTSStatus('已停止');
+            updateTTSButtons();
+            updateTTSProgress(0, ttsState.paragraphs.length);
+        }
+
+        // 为 TTS 加载下一章
+        function loadNextChapterForTTS() {
+            if (currentChapterIndex < chapters.length - 1) {
+                const nextIndex = currentChapterIndex + 1;
+                
+                // 显示提示
+                updateTTSStatus('加载下一章...');
+                
+                // 加载下一章
+                loadChapter(nextIndex).then(() => {
+                    // 延迟后继续朗读
+                    setTimeout(() => {
+                        if (ttsState.isPlaying) {
+                            prepareTTS();
+                            startTTS();
+                        }
+                    }, 1000);
+                }).catch(error => {
+                    console.error('加载下一章失败:', error);
+                    stopTTS();
+                });
+            } else {
+                // 已经是最后一章
+                stopTTS();
+                updateTTSStatus('朗读完成');
+            }
+        }
+
+        // 高亮当前段落
+        function highlightCurrentParagraph() {
+            removeHighlight();
+            const paragraphs = document.getElementById('chapter-content').querySelectorAll('p');
+            if (paragraphs[ttsState.currentParagraph]) {
+                paragraphs[ttsState.currentParagraph].classList.add('tts-highlight');
+                // 滚动到当前段落
+                paragraphs[ttsState.currentParagraph].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }
+
+        // 移除高亮
+        function removeHighlight() {
+            const highlighted = document.querySelectorAll('.tts-highlight');
+            highlighted.forEach(element => element.classList.remove('tts-highlight'));
+        }
+
+        // 更新 TTS 状态
+        function updateTTSStatus(status) {
+            const statusElement = document.getElementById('tts-status');
+            statusElement.textContent = status;
+            
+            // 更新状态样式
+            statusElement.className = 'tts-status';
+            if (status === '播放中') {
+                statusElement.classList.add('playing');
+            } else if (status === '已暂停') {
+                statusElement.classList.add('paused');
+            }
+        }
+
+        // 更新 TTS 按钮状态
+        function updateTTSButtons() {
+            const playBtn = document.getElementById('tts-play-btn');
+            const pauseBtn = document.getElementById('tts-pause-btn');
+            const stopBtn = document.getElementById('tts-stop-btn');
+            
+            if (ttsState.isPlaying && !ttsState.isPaused) {
+                playBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                playBtn.innerHTML = '<span>▶️</span><span>播放</span>';
+            } else if (ttsState.isPaused) {
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = false;
+                playBtn.innerHTML = '<span>▶️</span><span>继续</span>';
+            } else {
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+                playBtn.innerHTML = '<span>▶️</span><span>播放</span>';
+            }
+        }
+
+        // 更新 TTS 进度
+        function updateTTSProgress(current, total) {
+            const progressFill = document.getElementById('tts-progress-fill');
+            const progressText = document.getElementById('tts-progress-text');
+            
+            const percentage = total > 0 ? (current / total) * 100 : 0;
+            progressFill.style.width = percentage + '%';
+            
+            if (current === 0 && total === 0) {
+                progressText.textContent = '准备就绪';
+            } else {
+                progressText.textContent = `${current} / ${total} 段`;
+            }
+        }
+
+        // 保存 TTS 设置
+        function saveTTSSettings() {
+            const settings = {
+                voiceIndex: ttsState.voices.indexOf(ttsState.selectedVoice),
+                speed: ttsState.speed,
+                autoNextChapter: ttsState.autoNextChapter
+            };
+            localStorage.setItem('tts-settings', JSON.stringify(settings));
+        }
+
+        // 加载 TTS 设置
+        function loadTTSSettings() {
+            const saved = localStorage.getItem('tts-settings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    
+                    // 设置语速
+                    if (settings.speed) {
+                        ttsState.speed = settings.speed;
+                        document.getElementById('tts-speed-slider').value = settings.speed;
+                        document.getElementById('tts-speed-value').textContent = settings.speed.toFixed(1) + 'x';
+                    }
+                    
+                    // 设置自动下一章
+                    if (settings.autoNextChapter !== undefined) {
+                        ttsState.autoNextChapter = settings.autoNextChapter;
+                        document.getElementById('tts-auto-next-chapter').checked = settings.autoNextChapter;
+                    }
+                    
+                    // 语音设置需要在语音列表加载后设置
+                    setTimeout(() => {
+                        if (settings.voiceIndex >= 0 && settings.voiceIndex < ttsState.voices.length) {
+                            ttsState.selectedVoice = ttsState.voices[settings.voiceIndex];
+                            document.getElementById('tts-voice-select').value = settings.voiceIndex;
+                        }
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('加载 TTS 设置失败:', error);
+                }
+            }
+        }
+
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // 只在有章节内容时响应
+            if (currentChapterIndex < 0) return;
+            
+            // 防止在输入框中触发
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key) {
+                case ' ': // 空格键 - 播放/暂停
+                    e.preventDefault();
+                    if (document.getElementById('tts-controls').style.display !== 'none') {
+                        toggleTTSPlay();
+                    }
+                    break;
+                case 'Escape': // ESC - 停止
+                    if (document.getElementById('tts-controls').style.display !== 'none') {
+                        stopTTS();
+                    }
+                    break;
+            }
+        });
+
+        // 在页面加载完成后初始化 TTS
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟初始化，确保语音合成 API 可用
+            setTimeout(initTTS, 1000);
+        });
+
+        // 重写 displayChapter 函数以支持 TTS
+        const originalDisplayChapter = displayChapter;
+        displayChapter = function(chapterData) {
+            originalDisplayChapter(chapterData);
+            
+            // 如果 TTS 面板是打开的，准备 TTS
+            if (document.getElementById('tts-controls').style.display !== 'none') {
+                setTimeout(prepareTTS, 500);
+            }
+        };
     </script>
 </body>
 </html>
