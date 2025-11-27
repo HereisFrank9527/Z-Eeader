@@ -1288,7 +1288,7 @@
                 // 滚动到当前段落
                 paragraphs[ttsState.currentParagraph].scrollIntoView({ 
                     behavior: 'smooth', 
-                    block: 'center' 
+                    block: 'start' 
                 });
             }
         }
@@ -1432,7 +1432,7 @@
             
             // 如果 TTS 面板是打开的，准备 TTS
             if (document.getElementById('tts-controls').style.display !== 'none') {
-                setTimeout(prepareTTS, 500);
+                setTimeout(prepareTTS, 1000);
             }
         };
     </script>
