@@ -283,8 +283,8 @@
         /* 字体大小控制 */
         .font-size-controls {
             position: fixed;
-            bottom: 80px;
-            right: 20px;
+            bottom: 100px;
+            right: 10px;
             background: white;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -637,7 +637,7 @@
             <div class="tts-setting-row">
                 <label class="tts-setting-label">语速:</label>
                 <input type="range" class="tts-speed-slider" id="tts-speed-slider" 
-                       min="0.5" max="2.0" step="0.1" value="1.0">
+                       min="0.5" max="4.0" step="0.1" value="1.0">
                 <span class="tts-speed-value" id="tts-speed-value">1.0x</span>
             </div>
 
@@ -1093,6 +1093,27 @@
             }
         }
 
+        // 获取当前可见的段落索引
+        function getFirstVisibleParagraph() {
+            const chapterContent = document.querySelector('.reader-content');
+            const paragraphs = chapterContent.querySelectorAll('p');
+            const contentRect = chapterContent.getBoundingClientRect();
+            
+            for (let i = 0; i < paragraphs.length; i++) {
+                const paragraph = paragraphs[i];
+                const rect = paragraph.getBoundingClientRect();
+                
+                // 检查段落是否在可视区域内
+                if (rect.bottom > contentRect.top && rect.top < contentRect.bottom) {
+                    // 如果段落至少有一部分在可视区域内，返回该段落索引
+                    return i;
+                }
+            }
+            
+            // 如果没有可见段落，返回第一个段落
+            return 0;
+        }
+
         // 准备 TTS
         function prepareTTS() {
             const chapterContent = document.getElementById('chapter-content');
@@ -1141,11 +1162,15 @@
                 return;
             }
             
-            // 开始新的朗读
+
+            // 开始新的朗读 - 从当前可见段落开始
             if (ttsState.currentParagraph >= ttsState.paragraphs.length) {
-                ttsState.currentParagraph = 0;
+                // 如果当前段落超出范围，获取可见段落
+                ttsState.currentParagraph = getFirstVisibleParagraph();
+            } else if (ttsState.currentParagraph === 0) {
+                // 如果是从头开始，也要获取可见段落
+                ttsState.currentParagraph = getFirstVisibleParagraph();
             }
-            
             speakCurrentParagraph();
         }
 
@@ -1195,7 +1220,7 @@
             
             ttsState.utterance.onerror = function(event) {
                 console.error('TTS 错误:', event);
-                showError('语音朗读出错');
+                //showError('语音朗读出错');
                 stopTTS();
             };
             
