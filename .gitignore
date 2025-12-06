@@ -33,6 +33,7 @@ dist/
 .pytest_cache/
 
 # 其他
-.trea/
+.trae
+/.trae/
 *.bak
 *.tmp
