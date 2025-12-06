@@ -1,0 +1,38 @@
+# 虚拟环境
+/.conda/
+/venv/
+/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+logs/
+
+# 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 构建文件
+build/
+dist/
+*.egg-info/
+
+# 测试
+.coverage
+.pytest_cache/
+
+# 其他
+.trea
+*.bak
+*.tmp
