@@ -106,6 +106,21 @@ class TocParser:
             章节列表
         """
         base_uri = toc_rule.base_uri or base_url
+        
+        # 处理 base_uri 中的 %s 占位符
+        if base_uri and '%s' in base_uri:
+            # 从 book_url 中提取书籍 ID
+            # 例如：http://www.xbiquzw.net/10_10229/ -> 10_10229
+            import re
+            match = re.search(r'/(\d+_\d+|\d+)/?$', base_url)
+            if match:
+                book_id = match.group(1)
+                base_uri = base_uri.replace('%s', book_id)
+            else:
+                # 如果无法提取 ID，使用原 URL
+                print(f"无法从 {base_url} 中提取书籍 ID")
+                base_uri = base_url
+        
         selector = Selector(html, base_uri)
 
         chapters = []

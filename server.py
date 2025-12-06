@@ -151,11 +151,11 @@ def check_sources():
             try:
                 # 创建HTTP客户端
                 http_client = HttpClient(
-                    max_retries=1,
+                    max_retries=1,  # 总尝试次数为2次
                     min_interval=0.5,
                     max_interval=1.0,
                     verify_ssl=not rule.ignore_ssl,
-                    timeout=10
+                    timeout=3  # 减少超时时间
                 )
 
                 # 执行搜索测试
@@ -203,6 +203,98 @@ def check_sources():
             'success': False,
             'message': f'检查书源失败: {str(e)}'
         }), 500
+
+
+@app.route('/api/sources/check/stream', methods=['POST'])
+def check_sources_stream():
+    """检查所有书源可用性（SSE流式返回结果）"""
+    def generate():
+        try:
+            rules = rule_loader.load_rules("main-rules.json")
+            keyword = "斗破苍穹"  # 使用固定关键词测试
+            total = len(rules)
+            results = []
+
+            # 发送开始事件
+            yield f"data: {json.dumps({'type': 'start', 'total': total}, ensure_ascii=False)}\n\n"
+
+            for i, rule in enumerate(rules, 1):
+                result = {
+                    'id': i,
+                    'name': rule.name,
+                    'url': rule.url,
+                    'status': 'unknown',
+                    'message': '',
+                    'book_count': 0
+                }
+
+                # 发送当前检查的书源
+                yield f"data: {json.dumps({'type': 'checking', 'source': rule.name}, ensure_ascii=False)}\n\n"
+
+                # 检查是否有搜索配置
+                if not rule.search:
+                    result['status'] = 'disabled'
+                    result['message'] = '无搜索配置'
+                    results.append(result)
+                    # 发送检查结果
+                    yield f"data: {json.dumps({'type': 'result', 'source': rule.name, 'result': result, 'completed': i, 'total': total}, ensure_ascii=False)}\n\n"
+                    continue
+
+                try:
+                    # 创建HTTP客户端
+                    http_client = HttpClient(
+                        max_retries=1,  # 总尝试次数为2次
+                        min_interval=0.5,
+                        max_interval=1.0,
+                        verify_ssl=not rule.ignore_ssl,
+                        timeout=5  # 减少超时时间
+                    )
+
+                    # 执行搜索测试
+                    search_parser = SearchParser(rule, http_client)
+                    books = search_parser.search(keyword, max_results=5)
+
+                    if books:
+                        result['status'] = 'success'
+                        result['book_count'] = len(books)
+                        result['message'] = f'正常 - 找到 {len(books)} 本书'
+                    else:
+                        result['status'] = 'warning'
+                        result['message'] = '无搜索结果'
+
+                    http_client.close()
+
+                except Exception as e:
+                    result['status'] = 'error'
+                    error_msg = str(e)
+                    result['message'] = error_msg[:100] if len(error_msg) > 100 else error_msg
+
+                results.append(result)
+
+                # 发送检查结果
+                yield f"data: {json.dumps({'type': 'result', 'source': rule.name, 'result': result, 'completed': i, 'total': total}, ensure_ascii=False)}\n\n"
+
+            # 统计结果
+            success_count = sum(1 for r in results if r['status'] == 'success')
+            error_count = sum(1 for r in results if r['status'] == 'error')
+            warning_count = sum(1 for r in results if r['status'] == 'warning')
+            disabled_count = sum(1 for r in results if r['status'] == 'disabled')
+
+            # 发送完成事件
+            yield f"data: {json.dumps({'type': 'complete', 'summary': {'total': total, 'success': success_count, 'error': error_count, 'warning': warning_count, 'disabled': disabled_count}, 'results': results}, ensure_ascii=False)}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'检查书源失败: {str(e)}'}, ensure_ascii=False)}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )
 
 
 # ==================== 搜索功能 ====================

@@ -42,9 +42,11 @@ function switchTab(tabName, event) {
 // ==================== 书源管理 ====================
 async function loadSources() {
     const loadingEl = document.getElementById('sources-loading');
+    const summaryEl = document.getElementById('check-summary');
     const listEl = document.getElementById('sources-list');
 
     loadingEl.style.display = 'block';
+    summaryEl.style.display = 'none';
     listEl.innerHTML = '';
 
     try {
@@ -54,7 +56,48 @@ async function loadSources() {
         loadingEl.style.display = 'none';
 
         if (result.success) {
-            renderSources(result.data);
+            // 检查是否有保存的检查结果
+            const checkData = loadCheckResults();
+            if (checkData) {
+                // 显示上次检查结果
+                summaryEl.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0;">上次检查结果汇总</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; font-weight: bold;">${checkData.summary.total}</div>
+                                <div style="opacity: 0.9;">总计</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; font-weight: bold; color: #4caf50;">${checkData.summary.success}</div>
+                                <div style="opacity: 0.9;">✓ 正常</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; font-weight: bold; color: #ff9800;">${checkData.summary.warning}</div>
+                                <div style="opacity: 0.9;">⚠ 无结果</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; font-weight: bold; color: #f44336;">${checkData.summary.error}</div>
+                                <div style="opacity: 0.9;">✗ 错误</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; font-weight: bold; color: #9e9e9e;">${checkData.summary.disabled}</div>
+                                <div style="opacity: 0.9;">- 禁用</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
+                            检查时间: ${new Date(checkData.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                summaryEl.style.display = 'block';
+                
+                // 渲染带检查结果的书源列表
+                renderCheckResults(checkData.results);
+            } else {
+                // 没有检查结果，渲染默认书源列表
+                renderSources(result.data);
+            }
         } else {
             showToast(result.message, 'error');
         }
@@ -97,22 +140,126 @@ async function checkAllSources() {
     summaryEl.style.display = 'none';
     listEl.innerHTML = '';
 
+    // 创建进度显示区域
+    const progressDiv = document.createElement('div');
+    progressDiv.className = 'check-progress';
+    progressDiv.style.marginBottom = '20px';
+    listEl.appendChild(progressDiv);
+
     try {
-        const response = await fetch('/api/sources/check', {
+        // 使用SSE流式接口
+        const response = await fetch('/api/sources/check/stream', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             }
         });
 
-        const result = await response.json();
-        loadingEl.style.display = 'none';
+        if (!response.ok) {
+            throw new Error('检查请求失败');
+        }
 
-        if (result.success) {
-            renderCheckResults(result.data, result.summary);
-            showToast('书源检查完成', 'success');
-        } else {
-            showToast(result.message, 'error');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let allResults = [];
+        let total = 0;
+        let completed = 0;
+
+        // 读取流
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop(); // 保留最后一个不完整的部分
+
+            for (const line of lines) {
+                if (!line.trim() || !line.startsWith('data: ')) {
+                    continue;
+                }
+
+                const data = JSON.parse(line.substring(6));
+
+                switch (data.type) {
+                    case 'start':
+                        total = data.total;
+                        progressDiv.innerHTML = `
+                            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                                <div style="margin-bottom: 10px;">正在检查书源...总计: ${data.total} 个</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="check-progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div id="check-status" style="margin-top: 10px; color: #666;"></div>
+                            </div>
+                        `;
+                        break;
+
+                    case 'checking':
+                        document.getElementById('check-status').textContent = `正在检查: ${data.source}...`;
+                        break;
+
+                    case 'result':
+                        completed = data.completed;
+                        const progress = (completed / total * 100).toFixed(0);
+                        document.getElementById('check-progress-bar').style.width = `${progress}%`;
+                        document.getElementById('check-status').textContent = `已检查: ${data.source} - ${getStatusText(data.result.status)} (${completed}/${total})`;
+
+                        // 实时添加结果
+                        allResults.push(data.result);
+                        renderCheckResults(allResults);
+                        break;
+
+                    case 'complete':
+                        loadingEl.style.display = 'none';
+                        summaryEl.style.display = 'block';
+                        
+                        // 显示汇总信息
+                        summaryEl.innerHTML = `
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                                <h3 style="margin: 0 0 15px 0;">检查结果汇总</h3>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2em; font-weight: bold;">${data.summary.total}</div>
+                                        <div style="opacity: 0.9;">总计</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2em; font-weight: bold; color: #4caf50;">${data.summary.success}</div>
+                                        <div style="opacity: 0.9;">✓ 正常</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2em; font-weight: bold; color: #ff9800;">${data.summary.warning}</div>
+                                        <div style="opacity: 0.9;">⚠ 无结果</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2em; font-weight: bold; color: #f44336;">${data.summary.error}</div>
+                                        <div style="opacity: 0.9;">✗ 错误</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2em; font-weight: bold; color: #9e9e9e;">${data.summary.disabled}</div>
+                                        <div style="opacity: 0.9;">- 禁用</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 保存检查结果到localStorage
+                        saveCheckResults(data.results, data.summary);
+                        
+                        showToast('书源检查完成', 'success');
+                        break;
+
+                    case 'error':
+                        loadingEl.style.display = 'none';
+                        showToast('检查失败: ' + data.message, 'error');
+                        progressDiv.remove();
+                        break;
+                }
+            }
         }
     } catch (error) {
         loadingEl.style.display = 'none';
@@ -120,48 +267,36 @@ async function checkAllSources() {
     }
 }
 
-// 渲染检查结果
-function renderCheckResults(results, summary) {
-    const summaryEl = document.getElementById('check-summary');
-    const listEl = document.getElementById('sources-list');
+// 获取状态文本
+function getStatusText(status) {
+    const statusMap = {
+        'success': '正常',
+        'warning': '无结果',
+        'error': '错误',
+        'disabled': '禁用'
+    };
+    return statusMap[status] || status;
+}
 
-    // 显示汇总信息
-    summaryEl.style.display = 'block';
-    summaryEl.innerHTML = `
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0;">检查结果汇总</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold;">${summary.total}</div>
-                    <div style="opacity: 0.9;">总计</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #4caf50;">${summary.success}</div>
-                    <div style="opacity: 0.9;">✓ 正常</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #ff9800;">${summary.warning}</div>
-                    <div style="opacity: 0.9;">⚠ 警告</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #f44336;">${summary.error}</div>
-                    <div style="opacity: 0.9;">✗ 错误</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #9e9e9e;">${summary.disabled}</div>
-                    <div style="opacity: 0.9;">- 禁用</div>
-                </div>
-            </div>
-        </div>
-    `;
+// 渲染检查结果
+function renderCheckResults(results) {
+    const listEl = document.getElementById('sources-list');
+    const progressDiv = listEl.querySelector('.check-progress');
+
+    // 保留进度显示区域，只替换结果部分
+    let html = '';
+    if (progressDiv) {
+        html = '<div class="check-progress">' + progressDiv.innerHTML + '</div>';
+    }
 
     // 显示详细结果
     if (results.length === 0) {
-        listEl.innerHTML = '<p style="text-align: center; color: #888;">暂无书源</p>';
+        html += '<p style="text-align: center; color: #888;">暂无书源</p>';
+        listEl.innerHTML = html;
         return;
     }
 
-    listEl.innerHTML = results.map(source => {
+    html += results.map(source => {
         let statusBadge = '';
         let statusClass = '';
 
@@ -192,6 +327,27 @@ function renderCheckResults(results, summary) {
             </div>
         `;
     }).join('');
+
+    listEl.innerHTML = html;
+}
+
+// 保存检查结果
+function saveCheckResults(results, summary) {
+    const checkData = {
+        results: results,
+        summary: summary,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('sourceCheckResults', JSON.stringify(checkData));
+}
+
+// 加载检查结果
+function loadCheckResults() {
+    const checkData = localStorage.getItem('sourceCheckResults');
+    if (checkData) {
+        return JSON.parse(checkData);
+    }
+    return null;
 }
 
 // 加载书源到搜索下拉框
@@ -203,10 +359,24 @@ async function loadSourcesForSearch() {
         if (result.success) {
             const selectEl = document.getElementById('search-source');
             selectEl.innerHTML = '<option value="">所有书源</option>';
-
+            
+            // 获取检查结果
+            const checkData = loadCheckResults();
+            
             result.data.forEach(source => {
                 if (source.search_enabled) {
-                    selectEl.innerHTML += `<option value="${source.id}">${source.name}</option>`;
+                    // 检查是否有保存的检查结果，如果有，只显示正常的书源
+                    let showSource = true;
+                    if (checkData) {
+                        const sourceResult = checkData.results.find(r => r.id === source.id);
+                        if (sourceResult && sourceResult.status !== 'success') {
+                            showSource = false;
+                        }
+                    }
+                    
+                    if (showSource) {
+                        selectEl.innerHTML += `<option value="${source.id}">${source.name}</option>`;
+                    }
                 }
             });
         }
