@@ -6,6 +6,7 @@ Z Reader - Web 服务器
 import os
 import json
 import time
+import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from pathlib import Path
@@ -32,6 +33,71 @@ task_lock = threading.Lock()
 
 # Reader cache for book info and chapter content
 reader_cache = {}
+
+# 数据库文件路径
+DB_PATH = Path("zreader.db")
+
+# 数据库操作锁
+db_lock = threading.Lock()
+
+
+# ==================== 数据库操作 ====================
+def init_database():
+    """初始化数据库"""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+
+        # 创建书源检查结果表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS source_check_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                results TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                timestamp INTEGER NOT NULL
+            )
+        ''')
+
+        conn.commit()
+
+
+def save_check_results_to_db(results, summary):
+    """保存书源检查结果到数据库"""
+    with db_lock:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+
+            # 删除旧记录（只保留最新一条）
+            cursor.execute('DELETE FROM source_check_results')
+
+            # 插入新记录
+            cursor.execute(
+                'INSERT INTO source_check_results (results, summary, timestamp) VALUES (?, ?, ?)',
+                (json.dumps(results, ensure_ascii=False),
+                 json.dumps(summary, ensure_ascii=False),
+                 int(time.time() * 1000))
+            )
+
+            conn.commit()
+
+
+def load_check_results_from_db():
+    """从数据库加载书源检查结果"""
+    with db_lock:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT results, summary, timestamp FROM source_check_results ORDER BY id DESC LIMIT 1'
+            )
+            row = cursor.fetchone()
+
+            if row:
+                return {
+                    'results': json.loads(row[0]),
+                    'summary': json.loads(row[1]),
+                    'timestamp': row[2]
+                }
+
+            return None
 
 
 # ==================== 首页 ====================
@@ -205,6 +271,32 @@ def check_sources():
         }), 500
 
 
+@app.route('/api/sources/check/cached', methods=['GET'])
+def get_cached_check_results():
+    """获取缓存的书源检查结果"""
+    try:
+        cached_data = load_check_results_from_db()
+
+        if cached_data:
+            return jsonify({
+                'success': True,
+                'data': cached_data,
+                'cached': True
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '暂无缓存结果',
+                'cached': False
+            })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'获取缓存失败: {str(e)}'
+        }), 500
+
+
 @app.route('/api/sources/check/stream', methods=['POST'])
 def check_sources_stream():
     """检查所有书源可用性（SSE流式返回结果）"""
@@ -280,8 +372,19 @@ def check_sources_stream():
             warning_count = sum(1 for r in results if r['status'] == 'warning')
             disabled_count = sum(1 for r in results if r['status'] == 'disabled')
 
+            summary = {
+                'total': total,
+                'success': success_count,
+                'error': error_count,
+                'warning': warning_count,
+                'disabled': disabled_count
+            }
+
+            # 保存结果到数据库
+            save_check_results_to_db(results, summary)
+
             # 发送完成事件
-            yield f"data: {json.dumps({'type': 'complete', 'summary': {'total': total, 'success': success_count, 'error': error_count, 'warning': warning_count, 'disabled': disabled_count}, 'results': results}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'summary': summary, 'results': results}, ensure_ascii=False)}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': f'检查书源失败: {str(e)}'}, ensure_ascii=False)}\n\n"
@@ -412,7 +515,7 @@ def search_books_stream():
                 try:
                     http_client = HttpClient(
                         verify_ssl=not rule.ignore_ssl,
-                        timeout=10
+                        timeout=3
                     )
                     parser = SearchParser(rule, http_client)
                     books = parser.search(keyword, max_results=20)
@@ -735,7 +838,7 @@ def get_reader_book_info():
 
         try:
             # 创建HTTP客户端和解析器
-            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=10)
+            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=3)
             
             # 获取书籍信息
             book_parser = BookParser(rule, http_client)
@@ -829,7 +932,7 @@ def get_reader_chapter():
 
         try:
             # 创建HTTP客户端和解析器
-            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=10)
+            http_client = HttpClient(verify_ssl=not rule.ignore_ssl, timeout=3)
             chapter_parser = ChapterParser(rule, http_client)
             
             # 创建章节对象并传递URL
@@ -898,6 +1001,9 @@ def reader_page(source_id, book_url):
 if __name__ == '__main__':
     # 创建下载目录
     Path("downloads").mkdir(exist_ok=True)
+
+    # 初始化数据库
+    init_database()
 
     # 启动服务器
     print("\n" + "=" * 60)

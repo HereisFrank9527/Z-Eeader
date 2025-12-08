@@ -2,7 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#00bcd4">
     <title>Z Reader - 在线阅读器</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -51,7 +55,7 @@
         .chapter-item {
             padding: 10px 15px;
             margin-bottom: 5px;
-            border-radius: 5px;
+            border-radius: 2px;
             cursor: pointer;
             transition: all 0.3s;
             border: 1px solid transparent;
@@ -80,7 +84,7 @@
         .nav-btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -109,7 +113,7 @@
             margin-bottom: 20px;
             padding: 15px;
             background: white;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #ddd;
         }
 
@@ -142,7 +146,7 @@
         .loading-content {
             background: white;
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 4px;
             text-align: center;
         }
 
@@ -171,7 +175,7 @@
             border: none;
             width: 44px;
             height: 44px;
-            border-radius: 5px;
+            border-radius: 4px;
             font-size: 20px;
             cursor: pointer;
             padding: 0;
@@ -287,7 +291,7 @@
             right: 10px;
             background: white;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             z-index: 100;
@@ -316,7 +320,7 @@
             right: 20px;
             background: white;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             z-index: 100;
@@ -344,7 +348,7 @@
         .tts-status {
             font-size: 0.8em;
             padding: 2px 8px;
-            border-radius: 12px;
+            border-radius: 6px;
             background: #f0f0f0;
             color: #666;
         }
@@ -924,7 +928,7 @@
         function showError(message) {
             hideLoading();
             document.getElementById('chapter-content').innerHTML = `
-                <div style="text-align: center; color: #f44336; margin-top: 50px; padding: 20px; background: #ffebee; border-radius: 8px;">
+                <div style="text-align: center; color: #f44336; margin-top: 50px; padding: 20px; background: #ffebee; border-radius: 4px;">
                     <h3>错误</h3>
                     <p>${message}</p>
                     <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 15px;">重试</button>

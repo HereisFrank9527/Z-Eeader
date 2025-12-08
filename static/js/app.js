@@ -50,18 +50,28 @@ async function loadSources() {
     listEl.innerHTML = '';
 
     try {
-        const response = await fetch('/api/sources');
-        const result = await response.json();
+        // 先获取书源列表
+        const sourcesResponse = await fetch('/api/sources');
+        const sourcesResult = await sourcesResponse.json();
 
         loadingEl.style.display = 'none';
 
-        if (result.success) {
-            // 检查是否有保存的检查结果
-            const checkData = loadCheckResults();
-            if (checkData) {
+        if (!sourcesResult.success) {
+            showToast(sourcesResult.message, 'error');
+            return;
+        }
+
+        // 尝试从服务器获取缓存的检查结果
+        try {
+            const cacheResponse = await fetch('/api/sources/check/cached');
+            const cacheResult = await cacheResponse.json();
+
+            if (cacheResult.success && cacheResult.data) {
+                const checkData = cacheResult.data;
+
                 // 显示上次检查结果
                 summaryEl.innerHTML = `
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
                         <h3 style="margin: 0 0 15px 0;">上次检查结果汇总</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
                             <div style="text-align: center;">
@@ -91,15 +101,17 @@ async function loadSources() {
                     </div>
                 `;
                 summaryEl.style.display = 'block';
-                
+
                 // 渲染带检查结果的书源列表
                 renderCheckResults(checkData.results);
             } else {
-                // 没有检查结果，渲染默认书源列表
-                renderSources(result.data);
+                // 没有缓存结果，渲染默认书源列表
+                renderSources(sourcesResult.data);
             }
-        } else {
-            showToast(result.message, 'error');
+        } catch (cacheError) {
+            // 获取缓存失败，渲染默认书源列表
+            console.log('获取缓存失败，显示默认书源列表');
+            renderSources(sourcesResult.data);
         }
     } catch (error) {
         loadingEl.style.display = 'none';
@@ -189,7 +201,7 @@ async function checkAllSources() {
                     case 'start':
                         total = data.total;
                         progressDiv.innerHTML = `
-                            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                            <div style="background: #f5f5f5; padding: 15px; border-radius: 4px;">
                                 <div style="margin-bottom: 10px;">正在检查书源...总计: ${data.total} 个</div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" id="check-progress-bar" style="width: 0%"></div>
@@ -220,7 +232,7 @@ async function checkAllSources() {
                         
                         // 显示汇总信息
                         summaryEl.innerHTML = `
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
                                 <h3 style="margin: 0 0 15px 0;">检查结果汇总</h3>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
                                     <div style="text-align: center;">
@@ -246,11 +258,8 @@ async function checkAllSources() {
                                 </div>
                             </div>
                         `;
-                        
-                        // 保存检查结果到localStorage
-                        saveCheckResults(data.results, data.summary);
-                        
-                        showToast('书源检查完成', 'success');
+
+                        showToast('书源检查完成！结果已保存到服务器', 'success');
                         break;
 
                     case 'error':
@@ -331,25 +340,6 @@ function renderCheckResults(results) {
     listEl.innerHTML = html;
 }
 
-// 保存检查结果
-function saveCheckResults(results, summary) {
-    const checkData = {
-        results: results,
-        summary: summary,
-        timestamp: Date.now()
-    };
-    localStorage.setItem('sourceCheckResults', JSON.stringify(checkData));
-}
-
-// 加载检查结果
-function loadCheckResults() {
-    const checkData = localStorage.getItem('sourceCheckResults');
-    if (checkData) {
-        return JSON.parse(checkData);
-    }
-    return null;
-}
-
 // 加载书源到搜索下拉框
 async function loadSourcesForSearch() {
     try {
@@ -359,10 +349,19 @@ async function loadSourcesForSearch() {
         if (result.success) {
             const selectEl = document.getElementById('search-source');
             selectEl.innerHTML = '<option value="">所有书源</option>';
-            
-            // 获取检查结果
-            const checkData = loadCheckResults();
-            
+
+            // 尝试从服务器获取检查结果
+            let checkData = null;
+            try {
+                const cacheResponse = await fetch('/api/sources/check/cached');
+                const cacheResult = await cacheResponse.json();
+                if (cacheResult.success && cacheResult.data) {
+                    checkData = cacheResult.data;
+                }
+            } catch (e) {
+                console.log('获取缓存失败，显示所有书源');
+            }
+
             result.data.forEach(source => {
                 if (source.search_enabled) {
                     // 检查是否有保存的检查结果，如果有，只显示正常的书源
@@ -373,7 +372,7 @@ async function loadSourcesForSearch() {
                             showSource = false;
                         }
                     }
-                    
+
                     if (showSource) {
                         selectEl.innerHTML += `<option value="${source.id}">${source.name}</option>`;
                     }
@@ -455,7 +454,7 @@ async function searchBooks() {
                     case 'start':
                         totalSources = data.total;
                         progressDiv.innerHTML = `
-                            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                            <div style="background: #f5f5f5; padding: 15px; border-radius: 4px;">
                                 <div style="margin-bottom: 10px;">正在搜索关键词: <strong>${data.keyword}</strong></div>
                                 <div style="margin-bottom: 10px;">总计书源: ${data.total} 个</div>
                                 <div class="progress-bar">
@@ -496,7 +495,7 @@ async function searchBooks() {
                     case 'complete':
                         loadingEl.style.display = 'none';
                         progressDiv.innerHTML = `
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px;">
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 4px;">
                                 ✓ 搜索完成！共找到 <strong>${data.total_books}</strong> 本书
                             </div>
                         `;

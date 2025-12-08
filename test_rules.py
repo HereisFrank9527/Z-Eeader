@@ -44,7 +44,7 @@ def test_book_source(rule: Dict) -> Tuple[bool, str]:
     
     try:
         # 测试基础URL是否可访问
-        response = requests.get(url, timeout=10, allow_redirects=True)
+        response = requests.get(url, timeout=3, allow_redirects=True)
         if response.status_code == 200:
             return True, f"{name}: 基础URL可访问 ({url})"
         else:
